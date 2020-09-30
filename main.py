@@ -1,7 +1,7 @@
 from pprint import pprint
 
 import requests
-from tools import saveFile, _printer, getToday, getDeltaDate
+from tools import saveFile, _printer, getToday, getDeltaDate, getDayName
 import config
 
 
@@ -70,6 +70,8 @@ class Luxmed:
         return session
 
     def getGroupsIds(self):
+        """Get json with all IDs for services, doctors and places
+        """
         session = self.session
         self.headers.update({
             'Referer': 'https://portalpacjenta.luxmed.pl/PatientPortal/NewPortal/Page/Reservation/Search',
@@ -84,8 +86,11 @@ class Luxmed:
         return response.json()
 
     def searchVisits(self):
+        """Search for visit using user input
+        """
         session = self.session
 
+        # parse varieties and print all possibilities to user
         varieties = {}
         for index, exam in enumerate(self.service_groups, start=1):
             name = exam['name']
@@ -97,20 +102,30 @@ class Luxmed:
 
             exams_dict = {}
             for i, subexam in enumerate(exam['children'], start=1):
-                exams_dict.update({
-                    i: {
-                        'name': subexam['name'],
-                        'id': subexam['id'],
-                    }
-                })
+                if subexam.get('children'):
+                    for i, subsubexam in enumerate(subexam['children'], start=1):
+                        exams_dict.update({
+                            i: {
+                                'name': subsubexam['name'],
+                                'id': subsubexam['id'],
+                            }
+                        })
+                else:
+                    exams_dict.update({
+                        i: {
+                            'name': subexam['name'],
+                            'id': subexam['id'],
+                        }
+                    })
             variety['examList'] = exams_dict
             varieties.update({
                 index: variety,
             })
 
-        user_choice_exam = int(
-            input(f'Wybierz usługę z listy powyżej. [{min(varieties.keys())}-{max(varieties.keys())}]'))
+        user_choice_exam = int(input(f'Wybierz usługę z listy powyżej. '
+                                     f'[{min(varieties.keys())}-{max(varieties.keys())}]'))
 
+        # specific exams are nested in general exam types so we have to ask user for actual choice
         if len(varieties[user_choice_exam]['examList']) > 0:
             for i, exam in varieties[user_choice_exam]['examList'].items():
                 name = exam['name']
@@ -138,10 +153,30 @@ class Luxmed:
         response = session.get(self._URL_SEARCH, params=postData)
         if self._DEBUG:
             saveFile('visits', response.text)
+        return response.json()
+
+    def parseVisits(self, data):
+        """Parse response and check for available visits
+        """
+        visitName = data['termsForService']['serviceVariantName']
+        availability = data['termsForService']['termsForDays']
+        # doctor = '{} {}'.format(data['doctor']['firstName'], data['doctor']['lastName'])
+
+        print(f'You\'re searching for visits to: {visitName} \n'
+              f'We\'ve found {len(availability)} available visits:')
+
+        print(f'Available days to see {visitName.upper()}: ')
+        for i, day in enumerate(availability, start=1):
+            date_string = day['day'].split('T')[0]
+            day_name = getDayName(date_string)
+            print(f'[{i}. {date_string} {day_name}]')
+
+        return
 
 
 if __name__ == '__main__':
     luxmed = Luxmed(login=config.email, password=config.password)
     luxmed.getLogin()
     luxmed.getGroupsIds()
-    luxmed.searchVisits()
+    visits = luxmed.searchVisits()
+    luxmed.parseVisits(visits)

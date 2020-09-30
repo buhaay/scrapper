@@ -1,7 +1,17 @@
 import json
 from pprint import pprint
-from datetime import date
+from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
+
+polish_day_map = {
+    'Monday': 'Poniedziałek',
+    'Tuesday': 'Wtorek',
+    'Wednesday': 'Środa',
+    'Thursday': 'Czwartek',
+    'Friday': 'Piątek',
+    'Saturday': 'Sobota',
+    'Sunday': 'Niedziela',
+}
 
 
 def saveFile(filename, data):
@@ -34,7 +44,13 @@ def getDeltaDate(**kwargs):
     if kwargs.get('months'):
         pass
     if kwargs.get('days'):
-        print(date.today())
         newDate = date.today() + relativedelta(days=+kwargs['days'])
 
     return newDate.strftime('%Y-%m-%d')
+
+
+def getDayName(date_string):
+    dateObject = datetime.strptime(date_string, '%Y-%m-%d')
+    dayName = dateObject.strftime('%A')
+    return polish_day_map[dayName]
+1
