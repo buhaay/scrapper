@@ -53,4 +53,3 @@ def getDayName(date_string):
     dateObject = datetime.strptime(date_string, '%Y-%m-%d')
     dayName = dateObject.strftime('%A')
     return polish_day_map[dayName]
-1
