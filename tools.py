@@ -38,15 +38,17 @@ def getToday():
     return today
 
 
-def getDeltaDate(**kwargs):
+def getDeltaDate(start_date, expected_format, **kwargs):
     if kwargs.get('years'):
         pass
-    if kwargs.get('months'):
+    elif kwargs.get('months'):
         pass
-    if kwargs.get('days'):
-        newDate = date.today() + relativedelta(days=+kwargs['days'])
+    elif kwargs.get('days'):
+        newDate = start_date + relativedelta(days=+kwargs['days'])
+    elif kwargs.get('hours'):
+        newDate = start_date + relativedelta(hours=+kwargs['hours'])
 
-    return newDate.strftime('%Y-%m-%d')
+    return newDate.strftime(expected_format)
 
 
 def getDayName(date_string):
