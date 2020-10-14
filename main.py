@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from pprint import pprint
 
 import requests
@@ -36,6 +37,8 @@ class Luxmed:
         self._URL_GROUPS = self._URL + '/NewPortal/Dictionary/serviceVariantsGroups'
         self._URL_SEARCH = self._URL + '/NewPortal/terms/index'
         self._URL_TOKEN = self._URL + '/NewPortal/security/getforgerytoken'
+        self._URL_LOCKTERM = self._URL + '/NewPortal/reservation/lockterm'
+        self._URL_CONFIRM = self._URL + '/NewPortal/reservation/confirm'
 
         # CONFIG
         self._DEBUG = True
@@ -90,7 +93,7 @@ class Luxmed:
             saveFile('groups_page', response.text)
         # _printer(header='RESPONSE', data=response.content)
         service_groups = response.json()
-        self.store.update({
+        self.storage.update({
             'labels': service_groups
         })
         return
@@ -102,7 +105,7 @@ class Luxmed:
 
         # parse varieties and print all possibilities to user
         varieties = {}
-        for index, exam in enumerate(self.store['labels'], start=1):
+        for index, exam in enumerate(self.storage['labels'], start=1):
             name = exam['name']
             print(f'[{index}. {name}]')
             variety = {
@@ -132,7 +135,7 @@ class Luxmed:
                 index: variety,
             })
 
-        user_choice_exam = int(input(f'Wybierz usługę z listy powyżej. '
+        user_choice_exam = int(input(f'# Wybierz usługę z listy powyżej. '
                                      f'[{min(varieties.keys())}-{max(varieties.keys())}]'))
 
         # specific exams are nested in general exam types so we have to ask user for actual choice
@@ -141,8 +144,14 @@ class Luxmed:
                 name = exam['name']
                 print(f'[{i}. {name}]')
 
-        user_choice_subexam = int(input(f'Wybierz konkretne badanie z listy powyżej. '
+        user_choice_subexam = int(input(f'# Wybierz konkretne badanie z listy powyżej. '
                                         f'[{min(varieties[user_choice_exam]["examList"].keys())}-{max(varieties[user_choice_exam]["examList"].keys())}]'))
+
+        self.storage.update({
+            'user_choice': {
+                'exam': varieties[user_choice_exam]['examList'][user_choice_subexam]
+            }
+        })
 
         postData = {
             'serviceVariantId': varieties[user_choice_exam]['examList'][user_choice_subexam]['id'],
@@ -150,7 +159,7 @@ class Luxmed:
             'languageId': '10',
             'searchDateFrom': getToday(),
             # for now search default 2 weeks
-            'searchDateTo': getDeltaDate(days=14),
+            'searchDateTo': getDeltaDate(date.today(), expected_format='%Y-%m-%d', days=14),
             'searchDatePreset': '14',
             'processId': '0c7f68f8-d62b-4db4-a949-7cbc6599ea0b',
             # 'secondServiceVariantId': '12574',
@@ -161,6 +170,9 @@ class Luxmed:
         }
 
         response = session.get(self._URL_SEARCH, params=postData)
+        self.storage.update({
+            'correlationId': response.json()['correlationId']
+        })
         if self._DEBUG:
             saveFile('visits', response.text)
         return response.json()
@@ -171,8 +183,8 @@ class Luxmed:
         visitName = data['termsForService']['serviceVariantName']
         availability = data['termsForService']['termsForDays']
 
-        print(f'Szukam terminów... \n'
-              f'Znalazłem {len(availability)} dni w których przyjmuje {visitName}:')
+        print(f'* Szukam terminów... \n'
+              f'* Znalazłem {len(availability)} dni w których przyjmuje {visitName}:')
 
         for i, av_day in enumerate(availability, start=1):
             date_string = av_day['day'].split('T')[0]
@@ -180,12 +192,21 @@ class Luxmed:
             print(f'[{i}. {date_string} {day_name}]')
 
         if len(availability) > 0:
-            user_choice_day = int(input(f'Wybierz dzień: [1-{len(availability)}]'))
-            for av_visit in availability[user_choice_day-1]['terms']:
+            # let user choose day
+            user_choice_day = int(input(f'# Wybierz dzień: [1-{len(availability)}]'))
+            for i, av_visit in enumerate(availability[user_choice_day - 1]['terms']):
                 visit_time = av_visit['dateTimeFrom'].split('T')[1][:-3]
                 clinic = av_visit['clinic']
                 doctor = '{} {}'.format(av_visit['doctor']['firstName'], av_visit['doctor']['lastName'])
-                print(f'[Godzina: {visit_time} | Placówka: {clinic} | Lekarz: {doctor}]')
+                print(f'[{i}. Godzina: {visit_time} | Placówka: {clinic} | Lekarz: {doctor}]')
+
+            # let user choose hour
+            user_choice_hour = int(input(f'# Wybierz godzinę: [1-{len(availability[user_choice_day - 1]["terms"])}]'))
+
+            # save user choice visit details
+            self.storage['user_choice'].update({
+                'av_visit': availability[user_choice_day - 1]['terms'][user_choice_hour]
+            })
         else:
             raise Exception('Nie ma dostępnych terminów w przeciągu 2 tygodni.')
 
@@ -198,39 +219,42 @@ class Luxmed:
                              ||        || as param in next step
         4. /confirm          || POST   || last request, returns json with reservationId
         """
+
         def getToken():
             response = session.get(self._URL_TOKEN)
-            jsonResponse = response.json()
+            try:
+                jsonResponse = response.json()
+            except:
+                saveFile('getToken', response.text)
+                pprint(response)
             if self._DEBUG:
-                print(f'## Token: {token}')
-            return response.json()['token']
+                print(f'## Token: {jsonResponse["token"]}')
+            return jsonResponse['token']
 
-        session = self.session
-        token = getToken()
-
-        def lockTerm(token):
+        def lockTerm():
             self.headers.update({
                 'XSRF-TOKEN': token,
             })
+            time_from = av_visit['dateTimeFrom'].split('T')[1][:-3]
+            time_to = av_visit['dateTimeTo'].split('T')[1][:-3]
+
+            start_date = datetime.strptime(av_visit['dateTimeFrom'], '%Y-%m-%dT%H:%M:%S').date()
+            full_date = getDeltaDate(start_date, expected_format='%Y-%m-%dT%H:%M:%S.000Z', hours=-2)
 
             postData = {
-                'serviceVariantId': 13410,
-                'serviceVariantName': 'Internista - konsultacja telefoniczna',
-                'facilityId': 1792,
-                'facilityName': 'Konsultacja telefoniczna',
-                'roomId': 5397,
-                'scheduleId': 6997919,
-                'date': '2020-10-12T07:36:00.000Z',
-                'timeFrom': '09:36',
-                'timeTo': '09:48',
-                'doctorId': 44905,
-                'doctor': {
-                    'id': 44905,
-                    'academicTitle': 'lek. med.',
-                    'firstName': 'MAŁGORZATA',
-                    'lastName': 'KLIMOWICZ'
-                },
-                'isAdditional': False,
+                'serviceVariantId': exam['id'],
+                'serviceVariantName': exam['name'],
+                'facilityId': av_visit['clinicId'],
+                'facilityName': 'Konsultacje telefoniczne' if 'telefoniczna' in exam['name'] \
+                    else av_visit['clinic'],
+                'roomId': av_visit['roomId'],
+                'scheduleId': av_visit['scheduleId'],
+                'date': full_date,
+                'timeFrom': time_from,
+                'timeTo': time_to,
+                'doctorId': av_visit['doctor']['id'],
+                'doctor': av_visit['doctor'],
+                'isAdditional': av_visit['isAdditional'],
                 'isImpediment': False,
                 'impedimentText': '',
                 'isPreparationRequired': False,
@@ -238,14 +262,61 @@ class Luxmed:
                 'referralId': None,
                 'referralTypeId': None,
                 'parentReservationId': None,
-                'correlationId': '006171fb-00f3-40d4-b54f-22f68fcea90c',
-                'isTelemedicine': True,
+                'correlationId': storage['correlationId'],
+                'isTelemedicine': av_visit['isTelemedicine'],
+            }
+            pprint(postData)
+            self.storage.update({
+                'post_data': {
+                    'lockTerm': postData,
                 }
-            pass
+            })
+            response = session.post(self._URL_LOCKTERM, data=postData, headers=self.headers)
+
+            if self._DEBUG:
+                saveFile('lockterm', response.text)
+
+            try:
+                jsonResponse = response.json()
+            except:
+                raise Exception('!!! Wystąpił błąd podczas rezerwacji terminu !!!')
+
+            self.storage.update({
+                'tmp_reservation_id': jsonResponse['value']['temporaryReservationId'],
+                'valuation': jsonResponse['value']['valuations'][0],
+            })
 
         def confirmVisit():
-            pass
+            post_data_prev = storage['post_data']['lockTerm']
+            postData = {
+                'date': post_data_prev['date'],
+                'doctorId': post_data_prev['doctorId'],
+                'facilityId': post_data_prev['facilityId'],
+                'parentReservationId': post_data_prev['parentReservationId'],
+                'referralId': post_data_prev['referralId'],
+                'referralRequired': False,
+                'roomId': post_data_prev['roomId'],
+                'serviceVariantId': post_data_prev['serviceVariantId'],
+                'temporaryReservationId': storage['tmp_reservation_id'],
+                'timeFrom': post_data_prev['timeFrom'],
+                'valuation': storage['valuation'],
+                'valuationId': None,
+            }
 
+            response = session.post(self._URL_CONFIRM, data=postData, headers=self.headers)
+            pprint(response)
+            if self._DEBUG:
+                saveFile('confirmed', response.text)
+            return
+
+        storage = self.storage
+        session = self.session
+        token = getToken()
+        av_visit = storage['user_choice']['av_visit']
+        exam = storage['user_choice']['exam']
+
+        lockTerm()
+        confirmVisit()
         return
 
 
