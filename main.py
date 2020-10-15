@@ -1,13 +1,18 @@
 from datetime import date, datetime
 from pprint import pprint
-
+from simplejson.errors import JSONDecodeError
 import requests
 from tools import saveFile, _printer, getToday, getDeltaDate, getDayName
 import config
 
 
 class Luxmed:
-    def __init__(self, login, password):
+    user_input = {
+
+    }
+
+    def __init__(self, login, password): #, user_input):
+        # user_input = self.user_input
         # store important data collected from every request
         self.storage = {}
 
@@ -25,9 +30,9 @@ class Luxmed:
             'Host': 'portalpacjenta.luxmed.pl',
             'TE': 'Trailers',
             'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0',
-            'X-Is-RWD': 'false',
-            'X-Requested-With': 'XMLHttpRequest',
-            'XSRF-TOKEN': '',
+            # 'X-Is-RWD': 'false',
+            # 'X-Requested-With': 'XMLHttpRequest',
+            # 'XSRF-TOKEN': '',
         }
 
         # URLS
@@ -43,19 +48,33 @@ class Luxmed:
         # CONFIG
         self._DEBUG = True
 
-    def getMainPage(self, s):
+    def request_printer(func):
+        def wrapper_function(*args, **kwargs):
+            print('### {}'.format(func.__name__))
+            session = args[0].session
+            print('### Request Headers ###')
+            for header_name, header_value in session.headers.items():
+                print(f'[{header_name} : {header_value}]')
+            return func(*args, **kwargs)
+
+        return wrapper_function
+
+    @request_printer
+    def getMainPage(self, session):
         """Initiate main page to get all cookies
         """
-        r = s.get(self._URL_MAIN_PAGE, headers=self.headers)
+        r = session.get(self._URL_MAIN_PAGE, headers=self.headers)
 
         if self._DEBUG:
             saveFile('main_page', r.text)
         return r
 
+    @request_printer
     def getLogin(self):
         """Login to your account
         """
         session = self.session
+        session.headers.update(self.headers)
         r = self.getMainPage(session)
         if r.status_code == 200:
             print('Main page is ready.')
@@ -79,6 +98,7 @@ class Luxmed:
 
         return session
 
+    @request_printer
     def getGroupsIds(self):
         """Get json with all IDs for services, doctors and places
         """
@@ -98,11 +118,9 @@ class Luxmed:
         })
         return
 
-    def searchVisits(self):
-        """Search for visit using user input
+    def parseVarieties(self):
+        """Parses all possibilities to user friendly format and asks for specific visit goal
         """
-        session = self.session
-
         # parse varieties and print all possibilities to user
         varieties = {}
         for index, exam in enumerate(self.storage['labels'], start=1):
@@ -152,9 +170,17 @@ class Luxmed:
                 'exam': varieties[user_choice_exam]['examList'][user_choice_subexam]
             }
         })
+        return varieties
+
+    @request_printer
+    def searchVisits(self):
+        """Search for visit using user input
+        """
+        storage = self.storage
+        session = self.session
 
         postData = {
-            'serviceVariantId': varieties[user_choice_exam]['examList'][user_choice_subexam]['id'],
+            'serviceVariantId': storage['user_choice']['exam']['id'],
             'cityId': '5',
             'languageId': '10',
             'searchDateFrom': getToday(),
@@ -170,21 +196,29 @@ class Luxmed:
         }
 
         response = session.get(self._URL_SEARCH, params=postData)
-        self.storage.update({
-            'correlationId': response.json()['correlationId']
-        })
+
         if self._DEBUG:
             saveFile('visits', response.text)
-        return response.json()
 
-    def parseVisits(self, data):
+        try:
+            jsonResponse = response.json()
+            self.storage.update({
+                'correlationId': jsonResponse['correlationId']
+            })
+            availability = jsonResponse['termsForService']['termsForDays']
+
+        except JSONDecodeError:
+            raise Exception('Coś poszło nie tak przy parsowaniu wizyt.')
+
+        return availability
+
+    def parseVisits(self):
         """Parse response and check for available visits
         """
-        visitName = data['termsForService']['serviceVariantName']
-        availability = data['termsForService']['termsForDays']
-
+        # visitName = visits['termsForService']['serviceVariantName']
+        availability = visits
         print(f'* Szukam terminów... \n'
-              f'* Znalazłem {len(availability)} dni w których przyjmuje {visitName}:')
+              f'* Znalazłem {len(availability)} dostępnych dni:')
 
         for i, av_day in enumerate(availability, start=1):
             date_string = av_day['day'].split('T')[0]
@@ -210,6 +244,7 @@ class Luxmed:
         else:
             raise Exception('Nie ma dostępnych terminów w przeciągu 2 tygodni.')
 
+    @request_printer
     def bookVisit(self):
         """Runs 4 requests to Luxmed site required to confirm visit:
         || endpoint          || method ||   action
@@ -222,13 +257,15 @@ class Luxmed:
 
         def getToken():
             response = session.get(self._URL_TOKEN)
+            if self._DEBUG:
+                saveFile('getToken', response.text)
+
             try:
                 jsonResponse = response.json()
-            except:
-                saveFile('getToken', response.text)
-                pprint(response)
-            if self._DEBUG:
                 print(f'## Token: {jsonResponse["token"]}')
+            except JSONDecodeError:
+                raise Exception('Coldn\'t parse token.')
+
             return jsonResponse['token']
 
         def lockTerm():
@@ -265,7 +302,6 @@ class Luxmed:
                 'correlationId': storage['correlationId'],
                 'isTelemedicine': av_visit['isTelemedicine'],
             }
-            pprint(postData)
             self.storage.update({
                 'post_data': {
                     'lockTerm': postData,
@@ -324,6 +360,15 @@ if __name__ == '__main__':
     luxmed = Luxmed(login=config.email, password=config.password)
     luxmed.getLogin()
     luxmed.getGroupsIds()
+    luxmed.parseVarieties()
     visits = luxmed.searchVisits()
-    luxmed.parseVisits(visits)
+    while not len(visits) > 0:
+        import time
+        from random import randint
+        sleep_time = randint(10, 15)
+        print(f'Czekamy {sleep_time} sekund...')
+        time.sleep(sleep_time)
+        visits = luxmed.searchVisits()
+
+    luxmed.parseVisits()
     luxmed.bookVisit()
