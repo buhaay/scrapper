@@ -1,8 +1,9 @@
+import sys
 from datetime import date, datetime
 from pprint import pprint
 from simplejson.errors import JSONDecodeError
 import requests
-from tools import saveFile, _printer, getToday, getDeltaDate, getDayName
+from tools import saveFile, getToday, getDeltaDate, getDayName
 import config
 
 
@@ -11,7 +12,7 @@ class Luxmed:
 
     }
 
-    def __init__(self, login, password): #, user_input):
+    def __init__(self, login, password):  # , user_input):
         # user_input = self.user_input
         # store important data collected from every request
         self.storage = {}
@@ -39,23 +40,23 @@ class Luxmed:
         self._URL = 'https://portalpacjenta.luxmed.pl/PatientPortal/'
         self._URL_MAIN_PAGE = self._URL + 'Account/LogOn'
         self._URL_LOGIN = self._URL + 'Account/LogIn'
-        self._URL_GROUPS = self._URL + '/NewPortal/Dictionary/serviceVariantsGroups'
-        self._URL_SEARCH = self._URL + '/NewPortal/terms/index'
-        self._URL_TOKEN = self._URL + '/NewPortal/security/getforgerytoken'
-        self._URL_LOCKTERM = self._URL + '/NewPortal/reservation/lockterm'
-        self._URL_CONFIRM = self._URL + '/NewPortal/reservation/confirm'
+        self._URL_GROUPS = self._URL + 'NewPortal/Dictionary/serviceVariantsGroups'
+        self._URL_SEARCH = self._URL + 'NewPortal/terms/index'
+        self._URL_TOKEN = self._URL + 'NewPortal/security/getforgerytoken'
+        self._URL_LOCKTERM = self._URL + 'NewPortal/reservation/lockterm'
+        self._URL_CONFIRM = self._URL + 'NewPortal/reservation/confirm'
 
         # CONFIG
         self._DEBUG = True
 
-    def request_printer(func):
+    def request_printer(self):
         def wrapper_function(*args, **kwargs):
-            print('### {}'.format(func.__name__))
+            print('--- {}'.format(self.__name__))
             session = args[0].session
-            print('### Request Headers ###')
+            print('### Request Headers ({}) ###'.format(datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')))
             for header_name, header_value in session.headers.items():
                 print(f'[{header_name} : {header_value}]')
-            return func(*args, **kwargs)
+            return self(*args, **kwargs)
 
         return wrapper_function
 
@@ -112,7 +113,10 @@ class Luxmed:
         if self._DEBUG:
             saveFile('groups_page', response.text)
         # _printer(header='RESPONSE', data=response.content)
-        service_groups = response.json()
+        try:
+            service_groups = response.json()
+        except JSONDecodeError:
+            raise Exception('Error occurred during parsing groups labels.')
         self.storage.update({
             'labels': service_groups
         })
@@ -126,6 +130,11 @@ class Luxmed:
         for index, exam in enumerate(self.storage['labels'], start=1):
             name = exam['name']
             print(f'[{index}. {name}]')
+            # prints:
+            # [1. Konsultacje w placówce]
+            # [2. Konsultacje telefoniczne]
+            # ....
+            # [12. Pozostałe badania]
             variety = {
                 'name': exam['name'],
                 'id': exam['id']
@@ -156,6 +165,7 @@ class Luxmed:
         user_choice_exam = int(input(f'# Wybierz usługę z listy powyżej. '
                                      f'[{min(varieties.keys())}-{max(varieties.keys())}]'))
 
+        # user_choice_exam = 1 # TODO
         # specific exams are nested in general exam types so we have to ask user for actual choice
         if len(varieties[user_choice_exam]['examList']) > 0:
             for i, exam in varieties[user_choice_exam]['examList'].items():
@@ -164,6 +174,8 @@ class Luxmed:
 
         user_choice_subexam = int(input(f'# Wybierz konkretne badanie z listy powyżej. '
                                         f'[{min(varieties[user_choice_exam]["examList"].keys())}-{max(varieties[user_choice_exam]["examList"].keys())}]'))
+
+        # user_choice_subexam = 1 # TODO
 
         self.storage.update({
             'user_choice': {
@@ -210,6 +222,8 @@ class Luxmed:
         except JSONDecodeError:
             raise Exception('Coś poszło nie tak przy parsowaniu wizyt.')
 
+        print(f'* Szukam terminów... \n'
+              f'* Znalazłem {len(availability)} dostępnych dni:')
         return availability
 
     def parseVisits(self):
@@ -217,8 +231,6 @@ class Luxmed:
         """
         # visitName = visits['termsForService']['serviceVariantName']
         availability = visits
-        print(f'* Szukam terminów... \n'
-              f'* Znalazłem {len(availability)} dostępnych dni:')
 
         for i, av_day in enumerate(availability, start=1):
             date_string = av_day['day'].split('T')[0]
@@ -226,23 +238,17 @@ class Luxmed:
             print(f'[{i}. {date_string} {day_name}]')
 
         if len(availability) > 0:
-            # let user choose day
-            user_choice_day = int(input(f'# Wybierz dzień: [1-{len(availability)}]'))
-            for i, av_visit in enumerate(availability[user_choice_day - 1]['terms']):
-                visit_time = av_visit['dateTimeFrom'].split('T')[1][:-3]
-                clinic = av_visit['clinic']
-                doctor = '{} {}'.format(av_visit['doctor']['firstName'], av_visit['doctor']['lastName'])
-                print(f'[{i}. Godzina: {visit_time} | Placówka: {clinic} | Lekarz: {doctor}]')
-
-            # let user choose hour
-            user_choice_hour = int(input(f'# Wybierz godzinę: [1-{len(availability[user_choice_day - 1]["terms"])}]'))
-
-            # save user choice visit details
-            self.storage['user_choice'].update({
-                'av_visit': availability[user_choice_day - 1]['terms'][user_choice_hour]
-            })
-        else:
-            raise Exception('Nie ma dostępnych terminów w przeciągu 2 tygodni.')
+            for av_visit in availability:
+                if av_visit['day'].split('T')[0] == user_start_date.split('T')[0]:
+                    for term in av_visit['terms']:
+                        visit_date_start = term['dateTimeFrom']
+                        visit_date_start_obj = datetime.strptime(visit_date_start, '%Y-%m-%dT%H:%M:%S')
+                        user_start_date_obj = datetime.strptime(user_start_date, '%Y-%m-%dT%H:%M')
+                        user_end_date_obj = datetime.strptime(user_end_date, '%Y-%m-%dT%H:%M')
+                        if user_start_date_obj > visit_date_start_obj > user_end_date_obj:
+                            self.storage['av_visit'] = term
+                            return True
+        return False
 
     @request_printer
     def bookVisit(self):
@@ -257,32 +263,33 @@ class Luxmed:
 
         def getToken():
             response = session.get(self._URL_TOKEN)
+            print(self._URL_TOKEN)
+
             if self._DEBUG:
                 saveFile('getToken', response.text)
 
             try:
                 jsonResponse = response.json()
-                print(f'## Token: {jsonResponse["token"]}')
+                print('=== response ===')
+                pprint(jsonResponse)
+                print('=== response ===')
             except JSONDecodeError:
                 raise Exception('Coldn\'t parse token.')
 
             return jsonResponse['token']
 
         def lockTerm():
-            self.headers.update({
-                'XSRF-TOKEN': token,
-            })
+            print('=== lockTerm ===')
             time_from = av_visit['dateTimeFrom'].split('T')[1][:-3]
             time_to = av_visit['dateTimeTo'].split('T')[1][:-3]
 
             start_date = datetime.strptime(av_visit['dateTimeFrom'], '%Y-%m-%dT%H:%M:%S').date()
-            full_date = getDeltaDate(start_date, expected_format='%Y-%m-%dT%H:%M:%S.000Z', hours=-2)
-
+            full_date = getDeltaDate(start_date, expected_format='%Y-%m-%dT%H:%M:%S.000Z', hours=+6)
             postData = {
                 'serviceVariantId': exam['id'],
                 'serviceVariantName': exam['name'],
                 'facilityId': av_visit['clinicId'],
-                'facilityName': 'Konsultacje telefoniczne' if 'telefoniczna' in exam['name'] \
+                'facilityName': 'Konsultacja telefoniczna' if 'telefoniczna' in exam['name'] \
                     else av_visit['clinic'],
                 'roomId': av_visit['roomId'],
                 'scheduleId': av_visit['scheduleId'],
@@ -307,20 +314,30 @@ class Luxmed:
                     'lockTerm': postData,
                 }
             })
+            pprint('=== postData ===')
+            pprint(postData)
+            pprint('=== /postData ===')
             response = session.post(self._URL_LOCKTERM, data=postData, headers=self.headers)
+            print(self._URL_LOCKTERM)
 
             if self._DEBUG:
                 saveFile('lockterm', response.text)
 
             try:
                 jsonResponse = response.json()
-            except:
-                raise Exception('!!! Wystąpił błąd podczas rezerwacji terminu !!!')
+                pprint('=== response ===')
+                pprint(jsonResponse)
+                pprint('=== /response ===')
+                if jsonResponse['errors']:
+                    raise Exception(jsonResponse['errors'][0]['message'])
+            except Exception as e:
+                raise Exception(str(e))
 
             self.storage.update({
                 'tmp_reservation_id': jsonResponse['value']['temporaryReservationId'],
                 'valuation': jsonResponse['value']['valuations'][0],
             })
+            self.storage['valuation']['price'] = int(self.storage['valuation']['price'])
 
         def confirmVisit():
             post_data_prev = storage['post_data']['lockTerm']
@@ -338,34 +355,54 @@ class Luxmed:
                 'valuation': storage['valuation'],
                 'valuationId': None,
             }
-
+            print('=== postData ===')
+            pprint(postData)
+            print('=== /postData ===')
+            pprint(self.headers)
             response = session.post(self._URL_CONFIRM, data=postData, headers=self.headers)
+            print(self._URL_CONFIRM)
             pprint(response)
             if self._DEBUG:
-                saveFile('confirmed', response.text)
+                saveFile('confirm', response.text)
             return
 
         storage = self.storage
         session = self.session
         token = getToken()
-        av_visit = storage['user_choice']['av_visit']
+        session.headers.update({
+            'XSRF-TOKEN': token,
+            'X-Is-RWD': 'false',
+            'X-Requested-With': 'XMLHttpRequest',
+        })
+        av_visit = storage['av_visit']
         exam = storage['user_choice']['exam']
 
-        lockTerm()
+        lockTerm(av_visit)
         confirmVisit()
         return
 
 
 if __name__ == '__main__':
+    try:
+        user_start_date = sys.argv[1]
+        print(user_start_date)
+        user_end_date = sys.argv[2]
+        print(user_end_date)
+    except IndexError:
+        user_start_date = None
+        user_end_date = None
+
     luxmed = Luxmed(login=config.email, password=config.password)
     luxmed.getLogin()
     luxmed.getGroupsIds()
     luxmed.parseVarieties()
     visits = luxmed.searchVisits()
+
     while not len(visits) > 0:
         import time
         from random import randint
-        sleep_time = randint(10, 15)
+
+        sleep_time = randint(15, 45)
         print(f'Czekamy {sleep_time} sekund...')
         time.sleep(sleep_time)
         visits = luxmed.searchVisits()
