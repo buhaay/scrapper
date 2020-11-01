@@ -2,6 +2,7 @@ import json
 from pprint import pprint
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
+import os
 
 polish_day_map = {
     'Monday': 'Poniedziałek',
@@ -15,9 +16,9 @@ polish_day_map = {
 
 
 def saveFile(filename, data):
-    with open(f'{filename}.json', 'w') as f:
+    path = os.path.join(os.getcwd(), 'responses')
+    with open(os.path.join(path, f'{filename}'), 'w') as f:
         f.write(data)
-        # print(f'File {filename} successfully saved!')
     return
 
 
@@ -55,3 +56,5 @@ def getDayName(date_string):
     dateObject = datetime.strptime(date_string, '%Y-%m-%d')
     dayName = dateObject.strftime('%A')
     return polish_day_map[dayName]
+
+
