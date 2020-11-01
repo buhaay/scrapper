@@ -61,26 +61,27 @@ class Luxmed:
         return wrapper_function
 
     @request_printer
-    def getMainPage(self, session):
+    def getMainPage(self):
         """Initiate main page to get all cookies
         """
-        r = session.get(self._URL_MAIN_PAGE, headers=self.headers)
+        session = self.session
+        session.headers.update(self.headers)
+
+        response = session.get(self._URL_MAIN_PAGE, headers=self.headers)
+        if response.status_code == 200:
+            print('Main page is ready.')
+        else:
+            raise Exception('Problem with loading main page!')
 
         if self._DEBUG:
-            saveFile('main_page', r.text)
-        return r
+            saveFile('main_page.html', response.text)
+        return response
 
     @request_printer
     def getLogin(self):
         """Login to your account
         """
         session = self.session
-        session.headers.update(self.headers)
-        r = self.getMainPage(session)
-        if r.status_code == 200:
-            print('Main page is ready.')
-        else:
-            raise Exception('Problem with loading main page!')
 
         login_data = {
             'Login': self.login,
@@ -92,10 +93,9 @@ class Luxmed:
         else:
             print(response.status_code)
             raise Exception('Problem with login!')
-        # _printer(header='LOGIN PAGE', data=response)
 
         if self._DEBUG:
-            saveFile('after_login', response.text)
+            saveFile('after_login.json', response.text)
 
         return session
 
@@ -241,17 +241,20 @@ class Luxmed:
             for av_visit in availability:
                 if av_visit['day'].split('T')[0] == user_start_date.split('T')[0]:
                     for term in av_visit['terms']:
+                        pprint(term)
                         visit_date_start = term['dateTimeFrom']
                         visit_date_start_obj = datetime.strptime(visit_date_start, '%Y-%m-%dT%H:%M:%S')
                         user_start_date_obj = datetime.strptime(user_start_date, '%Y-%m-%dT%H:%M')
                         user_end_date_obj = datetime.strptime(user_end_date, '%Y-%m-%dT%H:%M')
-                        if user_start_date_obj > visit_date_start_obj > user_end_date_obj:
-                            self.storage['av_visit'] = term
-                            return True
+                        print(type(visit_date_start_obj))
+                        print(user_start_date_obj)
+                        print(user_end_date_obj)
+                        if user_start_date_obj < visit_date_start_obj < user_end_date_obj:
+                            return term
         return False
 
     @request_printer
-    def bookVisit(self):
+    def bookVisit(self, av_visit):
         """Runs 4 requests to Luxmed site required to confirm visit:
         || endpoint          || method ||   action
         1. /getforgerytoken  || GET    || returns token which is required to setup as request-header in next step
@@ -278,7 +281,7 @@ class Luxmed:
 
             return jsonResponse['token']
 
-        def lockTerm():
+        def lockTerm(av_visit):
             print('=== lockTerm ===')
             time_from = av_visit['dateTimeFrom'].split('T')[1][:-3]
             time_to = av_visit['dateTimeTo'].split('T')[1][:-3]
@@ -374,7 +377,6 @@ class Luxmed:
             'X-Is-RWD': 'false',
             'X-Requested-With': 'XMLHttpRequest',
         })
-        av_visit = storage['av_visit']
         exam = storage['user_choice']['exam']
 
         lockTerm(av_visit)
@@ -393,12 +395,14 @@ if __name__ == '__main__':
         user_end_date = None
 
     luxmed = Luxmed(login=config.email, password=config.password)
+    luxmed.getMainPage()
     luxmed.getLogin()
     luxmed.getGroupsIds()
     luxmed.parseVarieties()
     visits = luxmed.searchVisits()
+    term = luxmed.parseVisits()
 
-    while not len(visits) > 0:
+    while not term:
         import time
         from random import randint
 
@@ -406,6 +410,6 @@ if __name__ == '__main__':
         print(f'Czekamy {sleep_time} sekund...')
         time.sleep(sleep_time)
         visits = luxmed.searchVisits()
+        term = luxmed.parseVisits()
 
-    luxmed.parseVisits()
-    luxmed.bookVisit()
+    luxmed.bookVisit(term)
