@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link type="text/javascript" href="{{ url_for('static', filename='map.js') }}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='jquery.datetimepicker.min.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
+    <title>Luxmed Scrapper</title>
+</head>
+<body>
+    <div class="wrapper">
+        <div>
+            <select class="js-example-placeholder-single js-states form-control">
+                <option></option>
+                {% for index, variety in varieties.items() %}
+                    {% for i, exam in variety.examList.items() %}
+                        <option value="{{ i }}">{{ exam.name }}</option>
+                    {% endfor %}
+                {% endfor %}
+            </select>
+        </div>
+<!--        <div>-->
+<!--            <ul>-->
+<!--                {% for index, variety in varieties.items() %}-->
+<!--                    <li class="varieties">{{ variety.name }}-->
+<!--                        <ul class="exams">-->
+<!--                            {% for i, exam in variety.examList.items() %}-->
+<!--                                <li>-->
+<!--                                    <input type="checkbox"  id="{{ variety.name }}">{{ exam.name }}-->
+<!--                                </li>-->
+<!--                            {% endfor %}-->
+<!--                        </ul>-->
+<!--                    </li>-->
+<!--                {% endfor %}-->
+<!--            </ul>-->
+<!--        </div>-->
+        <div class="container mt-5 mb-5" style="width:400px">
+            <label for="start_date" style="color:white">Data początkowa:</label>
+            <input type="text" id="start_date" class="form-control picker">
+        </div>
+        <div class="container mt-5 mb-5" style="width:400px">
+            <label for="start_date" style="color:white">Data końcowa:</label>
+            <input type="text" id="end_date" class="form-control picker">
+        </div>
+    </div>
+
+
+
+<script type="text/javascript" src="{{ url_for('static', filename='map.js') }}"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script src="{{ url_for('static', filename='jquery.datetimepicker.full.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+
+<script>
+    var date = new Date();
+    $('.picker').datetimepicker({
+        timepicker: true,
+        datepicker: true,
+        format: 'Y-m-d H:i',
+        value: date,
+        weeks: false,
+        hours12: false,
+        step: 30,
+    })
+
+    $(document).ready(function() {
+        $('.js-example-basic-single').select2();
+    });
+    $(".js-example-placeholder-single").select2({
+        placeholder: "Wyszukaj usługę po nazwie lub znajdź na liście poniżej.",
+        allowClear: true
+    });
+</script>
+</body>
+</html>
