@@ -1,3 +1,4 @@
+import re
 import sys
 from datetime import date, datetime
 from pprint import pprint
@@ -88,14 +89,20 @@ class Luxmed:
             'Password': self.password
         }
         response = session.post(self._URL_LOGIN, data=login_data)
-        if response.status_code == 200:
-            print('Login successful!')
-        else:
-            print(response.status_code)
-            raise Exception('Problem with login!')
+
+        # check if login form is still present
+        if re.search('id=[\'\"]loginForm[\'\"]', response.text):
+            message = 'Błąd logowania! Upewnij się, że wpisałeś poprawne ' \
+                      'dane i spróbuj ponownie.'
+            raise Exception(message)
+        # if response.status_code == 200:
+        #     print('Login successful!')
+        # else:
+        #     print(response.status_code)
+        #     raise Exception('Problem with login!')
 
         if self._DEBUG:
-            saveFile('after_login.json', response.text)
+            saveFile('after_login', response.text)
 
         return session
 
@@ -129,7 +136,7 @@ class Luxmed:
         varieties = {}
         for index, exam in enumerate(self.storage['labels'], start=1):
             name = exam['name']
-            print(f'[{index}. {name}]')
+            # print(f'[{index}. {name}]')
             # prints:
             # [1. Konsultacje w placówce]
             # [2. Konsultacje telefoniczne]
@@ -162,26 +169,26 @@ class Luxmed:
                 index: variety,
             })
 
-        user_choice_exam = int(input(f'# Wybierz usługę z listy powyżej. '
-                                     f'[{min(varieties.keys())}-{max(varieties.keys())}]'))
+        # user_choice_exam = int(input(f'# Wybierz usługę z listy powyżej. '
+        #                              f'[{min(varieties.keys())}-{max(varieties.keys())}]'))
 
         # user_choice_exam = 1 # TODO
         # specific exams are nested in general exam types so we have to ask user for actual choice
-        if len(varieties[user_choice_exam]['examList']) > 0:
-            for i, exam in varieties[user_choice_exam]['examList'].items():
-                name = exam['name']
-                print(f'[{i}. {name}]')
+        # if len(varieties[user_choice_exam]['examList']) > 0:
+        #     for i, exam in varieties[user_choice_exam]['examList'].items():
+        #         name = exam['name']
+        #         print(f'[{i}. {name}]')
 
-        user_choice_subexam = int(input(f'# Wybierz konkretne badanie z listy powyżej. '
-                                        f'[{min(varieties[user_choice_exam]["examList"].keys())}-{max(varieties[user_choice_exam]["examList"].keys())}]'))
+        # user_choice_subexam = int(input(f'# Wybierz konkretne badanie z listy powyżej. '
+        #                                 f'[{min(varieties[user_choice_exam]["examList"].keys())}-{max(varieties[user_choice_exam]["examList"].keys())}]'))
 
         # user_choice_subexam = 1 # TODO
 
-        self.storage.update({
-            'user_choice': {
-                'exam': varieties[user_choice_exam]['examList'][user_choice_subexam]
-            }
-        })
+        # self.storage.update({
+        #     'user_choice': {
+        #         'exam': varieties[user_choice_exam]['examList'][user_choice_subexam]
+        #     }
+        # })
         return varieties
 
     @request_printer
