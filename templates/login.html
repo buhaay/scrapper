@@ -13,6 +13,11 @@
 
 <div class="wrapper fadeInDown">
     <div id="formContent">
+        {% if message %}
+        <div class="fadeIn first">
+            <p class="warning">{{ message }}</p>
+        </div>
+        {% endif %}
         <div class="fadeIn first">
           <p>Luxmed Scrapper</p>
         </div>
