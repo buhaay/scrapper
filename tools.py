@@ -17,7 +17,13 @@ polish_day_map = {
 
 def saveFile(filename, data):
     path = os.path.join(os.getcwd(), 'responses')
-    with open(os.path.join(path, f'{filename}'), 'w') as f:
+    try:
+        json.loads(data)
+        extension = 'json'
+    except:
+        extension = 'html'
+
+    with open(os.path.join(path, f'{filename}.{extension}'), 'w') as f:
         f.write(data)
     return
 
