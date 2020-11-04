@@ -104,7 +104,9 @@ class Luxmed:
         if self._DEBUG:
             saveFile('after_login', response.text)
 
-        return session
+        username_pattern = re.compile('dropdown[\'\"].*?[\'\"]name[\'\"]>([A-Z\s]+)<', re.S)
+        username = username_pattern.findall(response.text)
+        return username
 
     @request_printer
     def getGroupsIds(self):
