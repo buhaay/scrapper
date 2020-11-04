@@ -2,47 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/login_form.css') }}">
     <link type="text/javascript" href="{{ url_for('static', filename='map.js') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='jquery.datetimepicker.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='jquery.datetimepicker.min.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
     <title>Luxmed Scrapper</title>
 </head>
 <body>
-    <div class="wrapper">
-        <div>
-            <select class="js-example-placeholder-single js-states form-control">
-                <option></option>
-                {% for index, variety in varieties.items() %}
-                    {% for i, exam in variety.examList.items() %}
-                        <option value="{{ i }}">{{ exam.name }}</option>
+    <div class="wrapper fadeInDown">
+        <div id="formContent">
+            <!-- login info -->
+            <div class="loginfo container mb-5">
+                Zalogowany jako: {{ username }}
+            </div>
+            <!-- exam picker -->
+            <div class="container mt-5 mb-5">
+                <select class="js-example-placeholder-single js-states form-control picker fadeIn first">
+                    <option></option>
+                    {% for index, variety in varieties.items() %}
+                        {% for i, exam in variety.examList.items() %}
+                            <option value="{{ i }}">{{ exam.name }}</option>
+                        {% endfor %}
                     {% endfor %}
-                {% endfor %}
-            </select>
-        </div>
-<!--        <div>-->
-<!--            <ul>-->
-<!--                {% for index, variety in varieties.items() %}-->
-<!--                    <li class="varieties">{{ variety.name }}-->
-<!--                        <ul class="exams">-->
-<!--                            {% for i, exam in variety.examList.items() %}-->
-<!--                                <li>-->
-<!--                                    <input type="checkbox"  id="{{ variety.name }}">{{ exam.name }}-->
-<!--                                </li>-->
-<!--                            {% endfor %}-->
-<!--                        </ul>-->
-<!--                    </li>-->
-<!--                {% endfor %}-->
-<!--            </ul>-->
-<!--        </div>-->
-        <div class="container mt-5 mb-5" style="width:400px">
-            <label for="start_date" style="color:white">Data początkowa:</label>
-            <input type="text" id="start_date" class="form-control picker">
-        </div>
-        <div class="container mt-5 mb-5" style="width:400px">
-            <label for="start_date" style="color:white">Data końcowa:</label>
-            <input type="text" id="end_date" class="form-control picker">
+                </select>
+            </div>
+
+            <!-- start date picker -->
+            <div class="container mt-5 mb-5">
+                <label for="start_date">Wybierz datę początkową:</label>
+                <input type="text" id="start_date" class="form-control picker fadeIn second">
+            </div>
+            <!-- end date picker-->
+            <div class="container mt-5 mb-5">
+                <label for="end_date">Wybierz datę końcową:</label>
+                <input type="text" id="end_date" class="form-control picker fadeIn third">
+            </div>
+            <div class="container mt-5 mb-5">
+                <input type="submit" class="fadeIn fourth" value="Wyszukaj">
+            </div>
+
         </div>
     </div>
 

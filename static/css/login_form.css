@@ -36,6 +36,12 @@ p {
 p.warning {
     color:red
 }
+
+/* SEARCH FORM */
+.loginfo {
+    text-align: right;
+    font-size: 0.9rem;
+}
 /* STRUCTURE */
 
 .wrapper {
@@ -122,7 +128,7 @@ input[type=button]:active, input[type=submit]:active, input[type=reset]:active  
   transform: scale(0.95);
 }
 
-input[type=text] {
+input {
   background-color: #f6f6f6;
   border: none;
   color: #0d0d0d;
@@ -143,12 +149,12 @@ input[type=text] {
   border-radius: 5px 5px 5px 5px;
 }
 
-input[type=text]:focus {
+input:focus {
   background-color: #fff;
   border-bottom: 2px solid #5fbae9;
 }
 
-input[type=text]:placeholder {
+input:placeholder {
   color: #cccccc;
 }
 
@@ -266,4 +272,52 @@ input[type=text]:placeholder {
 
 #icon {
   width:60%;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0px;
+}
+
+.varieties {
+    background-color: #777;
+    color: white;
+    cursor: pointer;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    text-align: left;
+    font-size: 15px;
+}
+
+.varieties:hover {
+   background-color: #555;
+}
+
+.varieties:before {
+    content: '\002B';
+    color: white;
+    font-weight: bold;
+    float: right;
+    margin-left: 5px;
+}
+
+.exams {
+    display: none;
+    overflow: hidden;
+    background-color: #f1f1f1;
+    transition: display 0.2s ease-out;
+}
+
+.exams > li:hover{
+   background-color: #555;
+}
+
+.showHidden {
+    display: inline;
+}
+
+.active:before {
+    content: "\2796"; /* Unicode character for "minus" sign (-) */
+    color: white;
 }
