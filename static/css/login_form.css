@@ -2,7 +2,7 @@
 /* BASIC */
 
 html {
-  background-color: #56baed;
+  background-color: #b3ddf2;
 }
 
 body {
@@ -27,21 +27,26 @@ h2 {
   color: #cccccc;
 }
 
-p {
-    font-size: larger;
-    color: #565656;
-    padding-top: 30px;
+/* LOGIN FORM */
+.title {
+  font-size: 1.3rem;
+  margin-top: 1rem;
 }
 
-p.warning {
-    color:red
+.warning {
+  font-size: 1rem;
+  padding: 30px;
+  color: red;
 }
+
 
 /* SEARCH FORM */
 .loginfo {
-    text-align: right;
-    font-size: 0.9rem;
+  text-align: right;
+  font-size: 0.9rem;
+  padding: 15px;
 }
+
 /* STRUCTURE */
 
 .wrapper {
@@ -52,20 +57,21 @@ p.warning {
   width: 100%;
   min-height: 100%;
   padding: 20px;
+  color: #565656;
 }
 
 #formContent {
   -webkit-border-radius: 10px 10px 10px 10px;
   border-radius: 10px 10px 10px 10px;
   background: #fff;
-  padding: 30px;
-  width: 90%;
-  max-width: 450px;
-  position: relative;
   padding: 0px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
   -webkit-box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
   box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
   text-align: center;
+  padding-top: 0px;
 }
 
 #formFooter {
@@ -103,12 +109,12 @@ input[type=button], input[type=submit], input[type=reset]  {
   text-decoration: none;
   display: inline-block;
   text-transform: uppercase;
-  font-size: 13px;
+  font-size: 1rem;
   -webkit-box-shadow: 0 10px 30px 0 rgba(95,186,233,0.4);
   box-shadow: 0 10px 30px 0 rgba(95,186,233,0.4);
   -webkit-border-radius: 5px 5px 5px 5px;
   border-radius: 5px 5px 5px 5px;
-  margin: 5px 20px 40px 20px;
+  margin: 20px 20px 30px 20px;
   -webkit-transition: all 0.3s ease-in-out;
   -moz-transition: all 0.3s ease-in-out;
   -ms-transition: all 0.3s ease-in-out;
@@ -131,13 +137,13 @@ input[type=button]:active, input[type=submit]:active, input[type=reset]:active  
 input {
   background-color: #f6f6f6;
   border: none;
-  color: #0d0d0d;
-  padding: 15px 32px;
+  color: #565656;
+  padding: 15px 0px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 16px;
-  margin: 5px;
+  margin: 10px;
   width: 85%;
   border: 2px solid #f6f6f6;
   -webkit-transition: all 0.5s ease-in-out;
@@ -320,4 +326,12 @@ ul {
 .active:before {
     content: "\2796"; /* Unicode character for "minus" sign (-) */
     color: white;
+}
+
+#searchbar {
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    height: calc(1.5em + .75rem + 2px);
+    padding: .375rem .75rem;
 }

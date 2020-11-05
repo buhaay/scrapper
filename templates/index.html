@@ -7,42 +7,38 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='jquery.datetimepicker.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='jquery.datetimepicker.min.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/searchbar.css') }}" />
     <title>Luxmed Scrapper</title>
 </head>
 <body>
     <div class="wrapper fadeInDown">
+
+        <!--- search form -->
         <div id="formContent">
             <!-- login info -->
-            <div class="loginfo container mb-5">
+            <div class="loginfo container">
                 Zalogowany jako: {{ username }}
             </div>
-            <!-- exam picker -->
-            <div class="container mt-5 mb-5">
-                <select class="js-example-placeholder-single js-states form-control picker fadeIn first">
-                    <option></option>
-                    {% for index, variety in varieties.items() %}
-                        {% for i, exam in variety.examList.items() %}
-                            <option value="{{ i }}">{{ exam.name }}</option>
+                <form id="searchForm" method="POST">
+                    <!-- exam picker -->
+                    <select class="js-example-placeholder-single js-states picker fadeIn first">
+                        <option></option>
+                        {% for index, variety in varieties.items() %}
+                            {% for i, exam in variety.examList.items() %}
+                                <option value="{{ i }}">{{ exam.name }}</option>
+                            {% endfor %}
                         {% endfor %}
-                    {% endfor %}
-                </select>
-            </div>
+                    </select>
 
-            <!-- start date picker -->
-            <div class="container mt-5 mb-5">
-                <label for="start_date">Wybierz datę początkową:</label>
-                <input type="text" id="start_date" class="form-control picker fadeIn second">
-            </div>
-            <!-- end date picker-->
-            <div class="container mt-5 mb-5">
-                <label for="end_date">Wybierz datę końcową:</label>
-                <input type="text" id="end_date" class="form-control picker fadeIn third">
-            </div>
-            <div class="container mt-5 mb-5">
-                <input type="submit" class="fadeIn fourth" value="Wyszukaj">
-            </div>
+                    <!-- start date picker -->
+                    <label for="start_date">Wybierz datę początkową:</label>
+                    <input type="text" id="start_date" class="picker fadeIn second">
 
+                    <!-- end date picker-->
+                    <label for="end_date">Wybierz datę końcową:</label>
+                    <input type="text" id="end_date" class="picker fadeIn third">
+                    <input type="submit" class="fadeIn fourth" value="Wyszukaj">
+                </form>
         </div>
     </div>
 
