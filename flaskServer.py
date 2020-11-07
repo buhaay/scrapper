@@ -24,7 +24,7 @@ def login():
         except Exception as e:
             return redirect(url_for('login', message=str(e)))
 
-        return redirect(url_for('search', username=username[0]))
+        return redirect(url_for('search', username=username))
 
     message = request.args.get('message', '')
     return render_template('login.html', message=message)
@@ -40,4 +40,10 @@ def search():
         varieties = luxmed.parseVarieties()
         return render_template('index.html', varieties=varieties, username=username)
     else:
-        pass
+        start_date = request.form['start_date']
+        print(start_date)
+        end_date = request.form['end_date']
+        print(end_date)
+        exam = request.form['exam_choice']
+        print(exam)
+        return render_template('manage_reservation.html')
