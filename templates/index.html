@@ -19,9 +19,9 @@
             <div class="loginfo container">
                 Zalogowany jako: {{ username }}
             </div>
-                <form method="POST">
+                <form method="POST" id="searchForm">
                     <!-- exam picker -->
-                    <label for="exam">
+                    <label for="exam"  class="fadeIn second">
                         Wpisz nazwę usługi lub kliknij aby rozwinąć listę:
                         <select class="searchbar fadeIn first" name="exam_choice" id="exam">
                             <option></option>
@@ -36,14 +36,14 @@
                     <!-- start date picker -->
                     <label for="date1" class="fadeIn second">
                         Wybierz datę początkową:
-                    </label>
                     <input type="text" id="date1" name="start_date" class="picker fadeIn second">
+                    </label>
 
                     <!-- end date picker-->
                     <label for="date2" class="fadeIn third">
                         Wybierz datę końcową:
-                    </label>
                     <input type="text" id="date2" name="end_date" class="picker fadeIn third">
+                    </label>
                     
                     <input type="submit" class="fadeIn fourth" value="Wyszukaj">
                 </form>
