@@ -27,7 +27,7 @@
                             <option></option>
                             {% for index, variety in varieties.items() %}
                                 {% for i, exam in variety.examList.items() %}
-                                    <option value="{{ i }}">{{ exam.name }}</option>
+                                    <option value="{{ index }}|{{ i }}">{{ exam.name }}</option>
                                 {% endfor %}
                             {% endfor %}
                         </select>
