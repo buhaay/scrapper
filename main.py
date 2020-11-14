@@ -105,7 +105,7 @@ class Luxmed:
             saveFile('after_login', response.text)
 
         username_pattern = re.compile('dropdown[\'\"].*?[\'\"]name[\'\"]>([A-Z\s]+)<', re.S)
-        username = username_pattern.findall(response.text)
+        username = username_pattern.findall(response.text)[0]
         return username
 
     @request_printer
@@ -194,14 +194,14 @@ class Luxmed:
         return varieties
 
     @request_printer
-    def searchVisits(self):
+    def searchVisits(self, exam_id):
         """Search for visit using user input
         """
         storage = self.storage
         session = self.session
 
         postData = {
-            'serviceVariantId': storage['user_choice']['exam']['id'],
+            'serviceVariantId': exam_id,
             'cityId': '5',
             'languageId': '10',
             'searchDateFrom': getToday(),
@@ -235,7 +235,7 @@ class Luxmed:
               f'* Znalazłem {len(availability)} dostępnych dni:')
         return availability
 
-    def parseVisits(self):
+    def parseVisits(self, visits, user_start_date, user_end_date):
         """Parse response and check for available visits
         """
         # visitName = visits['termsForService']['serviceVariantName']
@@ -248,22 +248,24 @@ class Luxmed:
 
         if len(availability) > 0:
             for av_visit in availability:
-                if av_visit['day'].split('T')[0] == user_start_date.split('T')[0]:
+                if user_start_date.split(' ')[0] < av_visit['day'].split('T')[0] < user_end_date.split(' ')[0]:
                     for term in av_visit['terms']:
                         pprint(term)
                         visit_date_start = term['dateTimeFrom']
                         visit_date_start_obj = datetime.strptime(visit_date_start, '%Y-%m-%dT%H:%M:%S')
-                        user_start_date_obj = datetime.strptime(user_start_date, '%Y-%m-%dT%H:%M')
-                        user_end_date_obj = datetime.strptime(user_end_date, '%Y-%m-%dT%H:%M')
+                        user_start_date_obj = datetime.strptime(user_start_date, '%Y-%m-%d %H:%M')
+                        user_end_date_obj = datetime.strptime(user_end_date, '%Y-%m-%d %H:%M')
                         print(type(visit_date_start_obj))
                         print(user_start_date_obj)
                         print(user_end_date_obj)
                         if user_start_date_obj < visit_date_start_obj < user_end_date_obj:
+                            pprint(term)
                             return term
         return False
 
     @request_printer
-    def bookVisit(self, av_visit):
+    def bookVisit(self, exam, av_visit):
+        print(av_visit)
         """Runs 4 requests to Luxmed site required to confirm visit:
         || endpoint          || method ||   action
         1. /getforgerytoken  || GET    || returns token which is required to setup as request-header in next step
@@ -290,13 +292,13 @@ class Luxmed:
 
             return jsonResponse['token']
 
-        def lockTerm(av_visit):
+        def lockTerm(exam, av_visit):
             print('=== lockTerm ===')
             time_from = av_visit['dateTimeFrom'].split('T')[1][:-3]
             time_to = av_visit['dateTimeTo'].split('T')[1][:-3]
 
-            start_date = datetime.strptime(av_visit['dateTimeFrom'], '%Y-%m-%dT%H:%M:%S').date()
-            full_date = getDeltaDate(start_date, expected_format='%Y-%m-%dT%H:%M:%S.000Z', hours=+6)
+            start_date = datetime.strptime(av_visit['dateTimeFrom'], '%Y-%m-%dT%H:%M:%S')
+            full_date = getDeltaDate(start_date, expected_format='%Y-%m-%dT%H:%M:%S.000Z', hours=-1)
             postData = {
                 'serviceVariantId': exam['id'],
                 'serviceVariantName': exam['name'],
@@ -374,6 +376,7 @@ class Luxmed:
             response = session.post(self._URL_CONFIRM, data=postData, headers=self.headers)
             print(self._URL_CONFIRM)
             pprint(response)
+            pprint(response.text)
             if self._DEBUG:
                 saveFile('confirm', response.text)
             return
@@ -381,14 +384,14 @@ class Luxmed:
         storage = self.storage
         session = self.session
         token = getToken()
-        session.headers.update({
+        self.headers.update({
             'XSRF-TOKEN': token,
-            'X-Is-RWD': 'false',
             'X-Requested-With': 'XMLHttpRequest',
         })
-        exam = storage['user_choice']['exam']
+        if 'X-Is-RWD' in self.headers:
+            del self.headers['X-Is-RWD']
 
-        lockTerm(av_visit)
+        lockTerm(exam, av_visit)
         confirmVisit()
         return
 
