@@ -38,12 +38,35 @@ def search():
         luxmed = storage['luxmed']
         luxmed.getGroupsIds()
         varieties = luxmed.parseVarieties()
+        pprint(varieties)
         return render_template('index.html', varieties=varieties, username=username)
     else:
         start_date = request.form['start_date']
         print(start_date)
         end_date = request.form['end_date']
         print(end_date)
-        exam = request.form['exam_choice']
+        exam_choice = request.form['exam_choice']
+        print(exam_choice)
+        luxmed = storage['luxmed']
+        varieties = luxmed.parseVarieties()
+
+        exam_index = int(exam_choice.split('|')[0])
+        exam_nested_index = int(exam_choice.split('|')[1])
+        exam = varieties[exam_index]['examList'][exam_nested_index]
         print(exam)
+        visits = luxmed.searchVisits(exam['id'])
+        term = luxmed.parseVisits(visits, start_date, end_date)
+
+        while not term:
+            import time
+            from random import randint
+
+            sleep_time = randint(15, 45)
+            print(f'Czekamy {sleep_time} sekund...')
+            time.sleep(sleep_time)
+            visits = luxmed.searchVisits(exam['id'])
+            term = luxmed.parseVisits(visits, start_date, end_date)
+
+        luxmed.bookVisit(exam, term)
+
         return render_template('manage_reservation.html')
