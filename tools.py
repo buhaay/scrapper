@@ -28,16 +28,8 @@ def saveFile(filename, data):
     return
 
 
-def _printer(header, data):
-    try:
-        data = json.loads(data)
-    except (json.JSONDecodeError, TypeError):
-        data = None
-
-    print('[{} {} {}]'.format(25 * '#', header, 25 * '#'))
-    if data:
-        pprint(data)
-    print('[{} {} {}]'.format(25 * '#', header, 25 * '#'))
+def logger(string):
+    print('[{}] {}'.format(datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S'), string))
 
 
 def getToday():
