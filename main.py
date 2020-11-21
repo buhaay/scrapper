@@ -305,6 +305,7 @@ class LuxmedRequester:
         self.storage.update({
             'tmp_reservation_id': reservation_id,
             'valuation': jsonResponse['value']['valuations'][0],
+            'doctorDetails': jsonResponse['value']['doctorDetails'],
         })
         # self.storage['valuation']['price'] = int(self.storage['valuation']['price'])
         return reservation_id
@@ -314,7 +315,11 @@ class LuxmedRequester:
         """ endpoint - /confirm
         || POST   || last request, returns json with reservationId
         """
-        post_data_prev = self.storage['post_data']['lockTerm']
+        storage = self.storage
+        session = self.session
+        response_dict = {}
+
+        post_data_prev = storage['post_data']['lockTerm']
         postData = {
             'date': post_data_prev['date'],
             'doctorId': post_data_prev['doctorId'],
@@ -324,24 +329,67 @@ class LuxmedRequester:
             'referralRequired': False,
             'roomId': post_data_prev['roomId'],
             'serviceVariantId': post_data_prev['serviceVariantId'],
-            'temporaryReservationId': self.storage['tmp_reservation_id'],
+            'temporaryReservationId': storage['tmp_reservation_id'],
             'timeFrom': post_data_prev['timeFrom'],
-            'valuation': self.storage['valuation'],
+            'valuation': storage['valuation'],
             'valuationId': None,
         }
 
         print('=== postData ===')
         pprint(postData)
         print('=== /postData ===')
-        pprint(self.headers)
-        session = self.session
+
         response = session.post(self._URL_CONFIRM, data=postData, headers=self.headers)
-        print(self._URL_CONFIRM)
-        pprint(response)
-        pprint(response.text)
         if self._DEBUG:
             saveFile('confirm', response.text)
-        return
+
+        pprint('=== response ===')
+        pprint(jsonResponse)
+        pprint('=== /response ===')
+
+        try:
+            error_messages = []
+            jsonResponse = response.json()
+            if jsonResponse.get('errors', []):
+                error_messages = [error['message'] for error in jsonResponse['errors']]
+                raise Exception('\n'.join(error_messages))
+            elif jsonResponse.get('warnings', []):
+                error_messages = [error['message'] for error in jsonResponse['warnings']]
+                raise Exception('\n'.join(error_messages))
+
+
+
+            if jsonResponse.get('value'):
+                reservation_id = jsonResponse['value']['reservationId']
+                status = 'confirmed'
+                message = 'Wizyta zarezerwowana!'
+                reservation_details = {
+                    'date': post_data_prev['date'],
+                    'timeFrom': post_data_prev['timeFrom'],
+                    'doctor': storage['doctorDetails'],
+                }
+            response_dict = {
+                'status': status,
+                'message': message,
+                'reservation_details': reservation_details,
+            }
+
+        except Exception as e:
+            status 'declined'
+            if error_messages:
+                message = str(e)
+            else:
+                message = 'Coś poszło nie tak. Zaloguj się na <a href="{}"> Portalu Pacjenta '
+                          'aby sprawdzić swoje rezerwacje'.format(self._URL_MAIN_PAGE)
+
+            response_dict = {
+                'status': status,
+                'message': message,
+                'reservation_details': {},
+            }
+
+        return response_dict
+
 
 class LuxmedParser:
     def __init__(self, *args, **kwargs):
