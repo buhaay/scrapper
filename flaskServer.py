@@ -75,6 +75,6 @@ def search():
         reservation_id = requester.lockTerm(exam, term)
         pprint(reservation_id)
 
-        requester.confirmVisit()
+        response_dict = requester.confirmVisit()
 
-        return render_template('manage_reservation.html')
+        return render_template('manage_reservation.html', response_dict=response_dict)
