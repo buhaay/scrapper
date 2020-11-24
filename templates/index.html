@@ -23,30 +23,28 @@
                     <!-- exam picker -->
                     <label for="exam"  class="fadeIn second">
                         Wpisz nazwę usługi lub kliknij aby rozwinąć listę:
-                        <select class="searchbar fadeIn first" name="exam_choice" id="exam">
-                            <option></option>
-                            {% for index, variety in varieties.items() %}
-                                {% for i, exam in variety.examList.items() %}
-                                    <option value="{{ index }}|{{ i }}">{{ exam.name }}</option>
-                                {% endfor %}
-                            {% endfor %}
-                        </select>
                     </label>
+                    <select class="searchbar fadeIn first" name="exam_choice" id="exam">
+                        <option></option>
+                        {% for index, variety in varieties.items() %}
+                            {% for i, exam in variety.examList.items() %}
+                                <option value="{{ index }}|{{ i }}">{{ exam.name }}</option>
+                            {% endfor %}
+                        {% endfor %}
+                    </select>
 
                     <!-- start date picker -->
                     <label for="date1" class="fadeIn second">
                         Wybierz datę początkową:
-                    <input type="text" id="date1" name="start_date" class="picker fadeIn second">
                     </label>
+                    <input type="text" id="date1" name="start_date" class="picker fadeIn second">
 
                     <!-- end date picker-->
                     <label for="date2" class="fadeIn third">
                         Wybierz datę końcową:
+                    </label>
                     <input type="text" id="date2" name="end_date" class="picker fadeIn third">
-                    </label>
-                    <label>
-                        <input type="submit" class="fadeIn fourth" value="Wyszukaj">
-                    </label>
+                    <input type="submit" class="fadeIn fourth" value="Wyszukaj">
                 </form>
         </div>
     </div>

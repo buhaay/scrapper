@@ -9,8 +9,8 @@ for (i = 0; i < varieties.length; i++) {
         exams.removeEventListener("click");
         exams.style.display("block");
         console.log(exams)
-        exams.style.padding = "10px";
-        exams.style.paddingLeft = "20px";
+        // exams.style.padding = "10px";
+        // exams.style.paddingLeft = "20px";
     });
 }
 

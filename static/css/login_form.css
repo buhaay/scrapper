@@ -27,6 +27,9 @@ h2 {
   color: #cccccc;
 }
 
+label {
+  max-width: 500px;
+}
 /* LOGIN FORM */
 .title {
   font-size: 1.3rem;
@@ -114,7 +117,7 @@ input[type=button], input[type=submit], input[type=reset]  {
   box-shadow: 0 10px 30px 0 rgba(95,186,233,0.4);
   -webkit-border-radius: 5px 5px 5px 5px;
   border-radius: 5px 5px 5px 5px;
-  margin: 20px 20px 30px 20px;
+  margin: 5px 20px 30px 20px;
   -webkit-transition: all 0.3s ease-in-out;
   -moz-transition: all 0.3s ease-in-out;
   -ms-transition: all 0.3s ease-in-out;
@@ -144,6 +147,7 @@ input {
   display: inline-block;
   font-size: 16px;
   width: 85%;
+  margin: 5px;
   border: 2px solid #f6f6f6;
   -webkit-transition: all 0.5s ease-in-out;
   -moz-transition: all 0.5s ease-in-out;
@@ -333,11 +337,9 @@ ul {
     transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
     height: calc(1.5em + .75rem + 2px);
     padding: .375rem .75rem;
-    width: 85%;
 }
 
-#searchForm {
-  display: grid;
-  justify-items: center;
-  grid-row-gap: 15px;
+#searchForm > span {
+/*   width: 5%; */
+  max-width: 85%;
 }
