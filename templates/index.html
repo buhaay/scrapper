@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/login_form.css') }}">
     <link type="text/javascript" href="{{ url_for('static', filename='map.js') }}">
-    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"> -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='jquery.datetimepicker.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='jquery.datetimepicker.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/searchbar.css') }}" />
@@ -44,8 +44,9 @@
                         Wybierz datę końcową:
                     <input type="text" id="date2" name="end_date" class="picker fadeIn third">
                     </label>
-                    
-                    <input type="submit" class="fadeIn fourth" value="Wyszukaj">
+                    <label>
+                        <input type="submit" class="fadeIn fourth" value="Wyszukaj">
+                    </label>
                 </form>
         </div>
     </div>
