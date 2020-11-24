@@ -11,9 +11,6 @@ import config
 
 
 class LuxmedRequester:
-    user_input = {
-
-    }
 
     def __init__(self, login, password):  # , user_input):
         # user_input = self.user_input
@@ -109,6 +106,7 @@ class LuxmedRequester:
 
         username_pattern = re.compile('dropdown[\'\"].*?[\'\"]name[\'\"]>([A-Z\s]+)<', re.S)
         username = username_pattern.findall(response.text)[0]
+        self.storage['username'] = username
         return username
 
     @request_printer
@@ -343,13 +341,14 @@ class LuxmedRequester:
         if self._DEBUG:
             saveFile('confirm', response.text)
 
-        pprint('=== response ===')
-        pprint(jsonResponse)
-        pprint('=== /response ===')
+
 
         try:
             error_messages = []
             jsonResponse = response.json()
+            pprint('=== response ===')
+            pprint(jsonResponse)
+            pprint('=== /response ===')
             if jsonResponse.get('errors', []):
                 error_messages = [error['message'] for error in jsonResponse['errors']]
                 raise Exception('\n'.join(error_messages))
@@ -361,28 +360,30 @@ class LuxmedRequester:
 
             if jsonResponse.get('value'):
                 reservation_id = jsonResponse['value']['reservationId']
-                status = 'confirmed'
+                status = 'Potwierdzona'
                 message = 'Wizyta zarezerwowana!'
                 reservation_details = {
-                    'date': post_data_prev['date'],
-                    'timeFrom': post_data_prev['timeFrom'],
+                    'date': post_data_prev['date'].split('T')[0],
+                    'time': post_data_prev['timeFrom'],
                     'doctor': storage['doctorDetails'],
                 }
             response_dict = {
+                'username': storage['username'],
                 'status': status,
                 'message': message,
                 'reservation_details': reservation_details,
             }
 
         except Exception as e:
-            status 'declined'
+            status = 'Odrzucona'
             if error_messages:
                 message = str(e)
             else:
-                message = 'Coś poszło nie tak. Zaloguj się na <a href="{}"> Portalu Pacjenta '
+                message = 'Coś poszło nie tak. Zaloguj się na <a href="{}"> Portalu Pacjenta ' \
                           'aby sprawdzić swoje rezerwacje'.format(self._URL_MAIN_PAGE)
 
             response_dict = {
+                'username': storage['username'],
                 'status': status,
                 'message': message,
                 'reservation_details': {},
@@ -446,8 +447,8 @@ class LuxmedParser:
 
         if len(visits) > 0:
             for av_visit in visits:
-                # if user_start_date.split(' ')[0] < av_visit['day'].split('T')[0] < user_end_date.split(' ')[0]:
-                if user_start_date.split('T')[0] < av_visit['day'].split('T')[0] < user_end_date.split('T')[0]:
+                if user_start_date.split(' ')[0] <= av_visit['day'].split('T')[0] <= user_end_date.split(' ')[0]:
+                # if user_start_date.split('T')[0] <= av_visit['day'].split('T')[0] <= user_end_date.split('T')[0]:
                     for term in av_visit['terms']:
                         pprint(term)
                         visit_date_start = term['dateTimeFrom']
@@ -459,7 +460,7 @@ class LuxmedParser:
                         print(type(visit_date_start_obj))
                         print(user_start_date_obj)
                         print(user_end_date_obj)
-                        if user_start_date_obj < visit_date_start_obj < user_end_date_obj:
+                        if user_start_date_obj <= visit_date_start_obj <= user_end_date_obj:
                             pprint(term)
                             return term
         return False
