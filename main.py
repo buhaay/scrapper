@@ -45,7 +45,7 @@ class LuxmedRequester:
         self._URL_CONFIRM = self._URL + 'NewPortal/reservation/confirm'
 
         # CONFIG
-        self._DEBUG = False
+        self.DEV_MODE = False
         self.debug_dict = {
             'exam_id': 4436,
         }
@@ -74,7 +74,7 @@ class LuxmedRequester:
         if not response.status_code == 200:
             raise Exception('Problem with loading main page!')
 
-        if self._DEBUG:
+        if self.DEV_MODE:
             saveFile('main_page.html', response.text)
         return response
 
@@ -101,7 +101,7 @@ class LuxmedRequester:
         #     print(response.status_code)
         #     raise Exception('Problem with login!')
 
-        if self._DEBUG:
+        if self.DEV_MODE:
             saveFile('after_login', response.text)
 
         username_pattern = re.compile(
@@ -121,7 +121,7 @@ class LuxmedRequester:
             'X-Is-RWD': 'false',
         })
         response = session.get(self._URL_GROUPS, headers=self.headers)
-        if self._DEBUG:
+        if self.DEV_MODE:
             saveFile('groups_page', response.text)
         # _printer(header='RESPONSE', data=response.content)
         try:
@@ -158,7 +158,7 @@ class LuxmedRequester:
 
         response = session.get(self._URL_SEARCH, params=postData)
 
-        if self._DEBUG:
+        if self.DEV_MODE:
             saveFile('visits', response.text)
 
         try:
@@ -185,7 +185,7 @@ class LuxmedRequester:
         response = session.get(self._URL_TOKEN)
         print(self._URL_TOKEN)
 
-        if self._DEBUG:
+        if self.DEV_MODE:
             saveFile('getToken', response.text)
 
         try:
@@ -290,7 +290,7 @@ class LuxmedRequester:
             self._URL_LOCKTERM, data=postData, headers=self.headers)
         print(self._URL_LOCKTERM)
 
-        if self._DEBUG:
+        if self.DEV_MODE:
             saveFile('lockterm', response.text)
 
         try:
@@ -343,7 +343,7 @@ class LuxmedRequester:
 
         response = session.post(
             self._URL_CONFIRM, data=postData, headers=self.headers)
-        if self._DEBUG:
+        if self.DEV_MODE:
             saveFile('confirm', response.text)
 
         try:
