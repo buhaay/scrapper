@@ -45,9 +45,9 @@ class LuxmedRequester:
         self._URL_CONFIRM = self._URL + 'NewPortal/reservation/confirm'
 
         # CONFIG
-        self._DEBUG = True
+        self._DEBUG = False
         self.debug_dict = {
-            'exam_id' : 4436,
+            'exam_id': 4436,
         }
 
     def request_printer(self):
@@ -55,7 +55,7 @@ class LuxmedRequester:
             print('\n')
             logger('{}'.format(self.__name__))
             session = args[0].session
-            print('{} Request Headers {}'.format('#'*20,'#'*20))
+            print('{} Request Headers {}'.format('#'*20, '#'*20))
             for header_name, header_value in session.headers.items():
                 print(f'[{header_name} : {header_value}]')
             print('#'*57)
@@ -104,7 +104,8 @@ class LuxmedRequester:
         if self._DEBUG:
             saveFile('after_login', response.text)
 
-        username_pattern = re.compile('dropdown[\'\"].*?[\'\"]name[\'\"]>([A-Z\s]+)<', re.S)
+        username_pattern = re.compile(
+            'dropdown[\'\"].*?[\'\"]name[\'\"]>([A-Z\s]+)<', re.S)
         username = username_pattern.findall(response.text)[0]
         self.storage['username'] = username
         return username
@@ -129,7 +130,6 @@ class LuxmedRequester:
             raise Exception('Error occurred during parsing groups labels.')
 
         return service_groups
-
 
     @request_printer
     def searchVisits(self, exam_id):
@@ -234,7 +234,8 @@ class LuxmedRequester:
         }
 
         pprint(postData)
-        response = session.post(self._URL_SAVETERM,  data=postData, headers=self.headers)
+        response = session.post(
+            self._URL_SAVETERM,  data=postData, headers=self.headers)
         print(self._URL_LOCKTERM)
         print(response.status_code)
         return
@@ -248,14 +249,16 @@ class LuxmedRequester:
         time_from = av_visit['dateTimeFrom'].split('T')[1][:-3]
         time_to = av_visit['dateTimeTo'].split('T')[1][:-3]
 
-        start_date = datetime.strptime(av_visit['dateTimeFrom'], '%Y-%m-%dT%H:%M:%S')
-        full_date = getDeltaDate(start_date, expected_format='%Y-%m-%dT%H:%M:%S.000Z', hours=-1)
+        start_date = datetime.strptime(
+            av_visit['dateTimeFrom'], '%Y-%m-%dT%H:%M:%S')
+        full_date = getDeltaDate(
+            start_date, expected_format='%Y-%m-%dT%H:%M:%S.000Z', hours=-1)
         postData = {
             'serviceVariantId': exam['id'],
             'serviceVariantName': exam['name'],
             'facilityId': av_visit['clinicId'],
-            'facilityName': 'Konsultacja telefoniczna' if 'telefoniczna' in exam['name'] \
-                else av_visit['clinic'],
+            'facilityName': 'Konsultacja telefoniczna' if 'telefoniczna' in exam['name']
+            else av_visit['clinic'],
             'roomId': av_visit['roomId'],
             'scheduleId': av_visit['scheduleId'],
             'date': full_date,
@@ -283,7 +286,8 @@ class LuxmedRequester:
         pprint(postData)
         pprint('=== /postData ===')
         session = self.session
-        response = session.post(self._URL_LOCKTERM, data=postData, headers=self.headers)
+        response = session.post(
+            self._URL_LOCKTERM, data=postData, headers=self.headers)
         print(self._URL_LOCKTERM)
 
         if self._DEBUG:
@@ -337,11 +341,10 @@ class LuxmedRequester:
         pprint(postData)
         print('=== /postData ===')
 
-        response = session.post(self._URL_CONFIRM, data=postData, headers=self.headers)
+        response = session.post(
+            self._URL_CONFIRM, data=postData, headers=self.headers)
         if self._DEBUG:
             saveFile('confirm', response.text)
-
-
 
         try:
             error_messages = []
@@ -350,13 +353,13 @@ class LuxmedRequester:
             pprint(jsonResponse)
             pprint('=== /response ===')
             if jsonResponse.get('errors', []):
-                error_messages = [error['message'] for error in jsonResponse['errors']]
+                error_messages = [error['message']
+                                  for error in jsonResponse['errors']]
                 raise Exception('\n'.join(error_messages))
             elif jsonResponse.get('warnings', []):
-                error_messages = [error['message'] for error in jsonResponse['warnings']]
+                error_messages = [error['message']
+                                  for error in jsonResponse['warnings']]
                 raise Exception('\n'.join(error_messages))
-
-
 
             if jsonResponse.get('value'):
                 reservation_id = jsonResponse['value']['reservationId']
@@ -380,7 +383,8 @@ class LuxmedRequester:
                 message = str(e)
             else:
                 message = 'Coś poszło nie tak. Zaloguj się na <a href="{}"> Portalu Pacjenta ' \
-                          'aby sprawdzić swoje rezerwacje'.format(self._URL_MAIN_PAGE)
+                          'aby sprawdzić swoje rezerwacje'.format(
+                              self._URL_MAIN_PAGE)
 
             response_dict = {
                 'username': storage['username'],
@@ -448,15 +452,18 @@ class LuxmedParser:
         if len(visits) > 0:
             for av_visit in visits:
                 if user_start_date.split(' ')[0] <= av_visit['day'].split('T')[0] <= user_end_date.split(' ')[0]:
-                # if user_start_date.split('T')[0] <= av_visit['day'].split('T')[0] <= user_end_date.split('T')[0]:
+                    # if user_start_date.split('T')[0] <= av_visit['day'].split('T')[0] <= user_end_date.split('T')[0]:
                     for term in av_visit['terms']:
                         pprint(term)
                         visit_date_start = term['dateTimeFrom']
-                        visit_date_start_obj = datetime.strptime(visit_date_start, '%Y-%m-%dT%H:%M:%S')
+                        visit_date_start_obj = datetime.strptime(
+                            visit_date_start, '%Y-%m-%dT%H:%M:%S')
                         # user_start_date_obj = datetime.strptime(user_start_date, '%Y-%m-%dT%H:%M')
-                        user_start_date_obj = datetime.strptime(user_start_date, '%Y-%m-%d %H:%M')
+                        user_start_date_obj = datetime.strptime(
+                            user_start_date, '%Y-%m-%d %H:%M')
                         # user_end_date_obj = datetime.strptime(user_end_date, '%Y-%m-%dT%H:%M')
-                        user_end_date_obj = datetime.strptime(user_end_date, '%Y-%m-%d %H:%M')
+                        user_end_date_obj = datetime.strptime(
+                            user_end_date, '%Y-%m-%d %H:%M')
                         print(type(visit_date_start_obj))
                         print(user_start_date_obj)
                         print(user_end_date_obj)
@@ -464,6 +471,7 @@ class LuxmedParser:
                             pprint(term)
                             return term
         return False
+
 
 if __name__ == '__main__':
     try:
@@ -498,7 +506,7 @@ if __name__ == '__main__':
     requester.saveTerm()
     pprint(token)
     exam = {
-        'id' : 4436,
+        'id': 4436,
         'name': 'Ortopeda'
     }
     reservation_id = requester.lockTerm(exam, term)
